@@ -1,0 +1,13 @@
+
+syntax = "proto3";
+package binance;
+
+option go_package = "pkg/app/server/contracts";
+
+import "proto/binance/contracts/models.proto";
+
+service Binance {
+
+    rpc SubscribeToStream(SubscribeToStreamRequest) returns (SubscriptionResponse);
+
+}

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"go.uber.org/fx"
 )
 
 type tradeMessage struct {
@@ -16,27 +17,44 @@ type tradeMessage struct {
 }
 
 type BinanceClient struct {
-	DataChan chan<- float64
-	stream   string
-	symbol   string
-	conn     *websocket.Conn
-	ctx      context.Context
-	cancel   context.CancelFunc
+	DataChan  chan<- float64
+	stream    string
+	symbol    string
+	conn      *websocket.Conn
+	lifecycle fx.Lifecycle
+	ctx       context.Context
+	cancel    context.CancelFunc
 }
 
 func NewBinanceClient(
+	lc fx.Lifecycle,
 	dataChan chan<- float64,
 	stream string,
 	symbol string,
 	ctx context.Context,
 ) *BinanceClient {
 	ctx, cancel := context.WithCancel(ctx)
-	return &BinanceClient{
-		DataChan: dataChan,
-		stream:   stream,
-		symbol:   symbol,
-		cancel:   cancel,
+	client := &BinanceClient{
+		DataChan:  dataChan,
+		stream:    stream,
+		symbol:    symbol,
+		lifecycle: lc,
+		ctx:       ctx,
+		cancel:    cancel,
 	}
+
+	lc.Append(
+		fx.Hook{
+			OnStart: func(ctx context.Context) error {
+				return client.ConnectToBinance()
+			},
+			OnStop: func(context.Context) error {
+				return client.Close()
+			},
+		},
+	)
+
+	return client
 }
 
 func (bc *BinanceClient) ConnectToBinance() error {

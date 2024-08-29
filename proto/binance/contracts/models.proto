@@ -1,0 +1,68 @@
+syntax = "proto3";
+package binance;
+
+option go_package = "github.com/ramasbeinaty/trading-chart-service/contracts";
+
+message SubscribeToStreamRequest {
+    string method = 1;
+    repeated string params = 2;
+    int64 id = 3;
+}
+
+message SubscriptionResponse {
+    repeated string result = 1;
+    int64 id = 2;
+}
+
+message ErrorResponse {
+    int64 code = 1;
+    string msg = 2;
+    optional string id = 3;
+}
+
+enum SubscriptionType {
+    SUBSCRIPTION_TYPE_SUBSCRIBE = 0;
+    SUBSCRIPTION_TYPE_UNSUBSCRIBE = 1;
+    SUBSCRIPTION_TYPE_LIST_SUBSCRIPTIONS = 2;
+}
+
+message AggregateTradeStreamDTO {
+    string e = 1;       // Event type
+    int64 E = 2;        // Event time
+    string s = 3;       // Symbol
+    int64 a = 4;        // Aggregate trade ID
+    float p = 5;        // Price
+    int64 q = 6;        // Quantity
+    int64 f = 7;        // First trade ID
+    int64 l = 8;        // Last Trade ID
+    int64 T = 9;        // Trade time
+    bool m = 10;        // Is the buyer the market maker?
+    bool M = 11;        // Ignore
+}
+
+message KlineCandlestickStreamWithTimezone {
+    string e = 1;       // Event type
+    int64 E = 2;        // Event time
+    string s = 3;       // Symbol
+    KlineStream k = 4;   
+}
+
+message KlineStream {
+    int64 t = 1;        // Kline start time
+    int64 T = 2;        // Kline close time
+    string s = 3;       // Symbol
+    string i = 4;       // Interval
+    int64 f = 5;        // First trade ID
+    int64 L = 6;        // Last trade ID
+    string o = 7;       // Open price
+    string c = 8;       // Close price
+    string h = 9;       // High price
+    string l = 10;      // Low price
+    string v = 11;      // Base asset volume
+    int64 n = 12;       // Number of trades
+    bool x = 13;        // Is this kline closed?
+    string q = 14;      // Quote asset volume
+    string V = 15;      // Taker buy base asset volume
+    string Q = 16;      // Taker buy quote asset volume
+    string B = 17;      // Ignore
+}
