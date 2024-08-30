@@ -6,66 +6,53 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gorilla/websocket"
-	"go.uber.org/fx"
 )
 
-type tradeMessage struct {
-	Price string `json:"p"`
-}
-
 type BinanceClient struct {
-	DataChan  chan<- float64
-	stream    string
-	symbol    string
-	conn      *websocket.Conn
-	lifecycle fx.Lifecycle
-	ctx       context.Context
-	cancel    context.CancelFunc
+	TradeDataChan chan<- TradeMessageParsed
+	stream        string
+	symbols       []string
+	conn          *websocket.Conn
+	ctx           context.Context
+	cancel        context.CancelFunc
 }
 
 func NewBinanceClient(
-	lc fx.Lifecycle,
-	dataChan chan<- float64,
+	tradeDataChan chan<- TradeMessageParsed,
 	stream string,
-	symbol string,
+	symbols []string,
 	ctx context.Context,
 ) *BinanceClient {
 	ctx, cancel := context.WithCancel(ctx)
-	client := &BinanceClient{
-		DataChan:  dataChan,
-		stream:    stream,
-		symbol:    symbol,
-		lifecycle: lc,
-		ctx:       ctx,
-		cancel:    cancel,
+
+	return &BinanceClient{
+		TradeDataChan: tradeDataChan,
+		stream:        stream,
+		symbols:       symbols,
+		ctx:           ctx,
+		cancel:        cancel,
 	}
-
-	lc.Append(
-		fx.Hook{
-			OnStart: func(ctx context.Context) error {
-				return client.ConnectToBinance()
-			},
-			OnStop: func(context.Context) error {
-				return client.Close()
-			},
-		},
-	)
-
-	return client
 }
 
 func (bc *BinanceClient) ConnectToBinance() error {
+	// construct the stream path for one or more symbols
+	streamQueries := make([]string, len(bc.symbols))
+	for i, symbol := range bc.symbols {
+		streamQueries[i] = fmt.Sprintf("%s@%s", symbol, bc.stream)
+	}
+	streamPath := strings.Join(streamQueries, "/")
+
 	addr := fmt.Sprintf(
-		"%s/ws/%s@%s",
+		"wss://%s/ws/%s",
 		BASE_ENDPOINT,
-		bc.symbol,
-		bc.stream,
+		streamPath,
 	)
 
-	c, _, err := websocket.DefaultDialer.Dial("wss://"+addr, nil)
+	c, _, err := websocket.DefaultDialer.Dial(addr, nil)
 	if err != nil {
 		log.Fatalf("Error dialing binance %s stream - %v", bc.stream, err)
 		return err
@@ -137,21 +124,48 @@ func (bc *BinanceClient) listen() {
 
 		switch messageType {
 		case websocket.PingMessage:
+			log.Println("PONG!")
 			bc.conn.WriteMessage(websocket.PongMessage, nil)
 		case websocket.TextMessage:
-			var msg tradeMessage
+			var msg TradeMessageDTO
 			if err := json.Unmarshal(message, &msg); err != nil {
 				log.Println("Error unmarshaling message - %w", err)
 				continue
 			}
 
-			price, err := strconv.ParseFloat(msg.Price, 64)
-			if err != nil {
-				log.Println("Error parsing price - %w", err)
-				continue
+			price := 0.0
+			if msg.Price != "" {
+				price, err = strconv.ParseFloat(msg.Price, 64)
+				if err != nil {
+					log.Println("Error parsing price - %w", err)
+					continue
+				}
 			}
 
-			bc.DataChan <- price
+			qty := 0.0
+			if msg.Quantity != "" {
+				qty, err = strconv.ParseFloat(msg.Quantity, 64)
+				if err != nil {
+					log.Println("Error parsing quantity - %w", err)
+					continue
+				}
+			}
+
+			parsedMsg := TradeMessageParsed{
+				msg.EventType,
+				msg.EventTime,
+				msg.Symbol,
+				msg.AggTradeId,
+				price,
+				qty,
+				msg.FirstTradeId,
+				msg.LastTradeId,
+				msg.TradeTime,
+				msg.IsBuyerMarketMaker,
+				msg.Ignore,
+			}
+
+			bc.TradeDataChan <- parsedMsg
 		default:
 			log.Printf("Unhandled incoming message type, %d", messageType)
 			continue
