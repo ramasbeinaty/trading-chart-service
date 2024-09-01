@@ -2,7 +2,7 @@ FROM golang:1.23.0 AS build
 WORKDIR /
 COPY . .
 
-RUN go build -o /app /cmd/server/main.go
+RUN go build -o /app main.go
 
 FROM ubuntu:20.04
 
