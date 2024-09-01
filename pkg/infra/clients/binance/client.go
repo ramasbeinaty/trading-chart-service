@@ -19,6 +19,7 @@ type BinanceClient struct {
 	conn          *websocket.Conn
 	ctx           context.Context
 	cancel        context.CancelFunc
+	config        *BinanceConfig
 }
 
 func NewBinanceClient(
@@ -26,6 +27,7 @@ func NewBinanceClient(
 	stream string,
 	symbols []string,
 	ctx context.Context,
+	config *BinanceConfig,
 ) *BinanceClient {
 	ctx, cancel := context.WithCancel(ctx)
 
@@ -35,6 +37,7 @@ func NewBinanceClient(
 		symbols:       symbols,
 		ctx:           ctx,
 		cancel:        cancel,
+		config:        config,
 	}
 }
 
@@ -48,7 +51,7 @@ func (bc *BinanceClient) ConnectToBinance() error {
 
 	addr := fmt.Sprintf(
 		"wss://%s/ws/%s",
-		BASE_ENDPOINT,
+		bc.config.BaseEndpoint,
 		streamPath,
 	)
 

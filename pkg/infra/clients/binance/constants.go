@@ -4,6 +4,5 @@ package binance
 // 		Handle being disconnected at the 24 hour mark
 
 const (
-	BASE_ENDPOINT         = "stream.binance.com:9443"
 	AGG_TRADE_STREAM_NAME = "aggTrade"
 )
