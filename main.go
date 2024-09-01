@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"github.com/ramasbeinaty/trading-chart-service/internal"
-	"github.com/ramasbeinaty/trading-chart-service/pkg/app/grpc/handlers"
+	"github.com/ramasbeinaty/trading-chart-service/pkg/app/handlers"
 	"github.com/ramasbeinaty/trading-chart-service/pkg/domain/base/utils"
 	"github.com/ramasbeinaty/trading-chart-service/pkg/domain/candlestick"
 	"github.com/ramasbeinaty/trading-chart-service/pkg/domain/subscription"
