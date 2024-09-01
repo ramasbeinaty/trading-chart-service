@@ -32,6 +32,7 @@ func (c *CandlestickService) ProcessTicks(
 	ctx context.Context,
 	symbol string,
 	price float64,
+	tradeTimestamp time.Time,
 ) error {
 	lgr := c.lgr.Get(&ctx)
 	lgr.Info("Processing ticks...")
@@ -39,7 +40,7 @@ func (c *CandlestickService) ProcessTicks(
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
-	key := symbol + time.Now().Truncate(time.Minute).Format("200601021504")
+	key := symbol + tradeTimestamp.Truncate(time.Minute).Format("200602011504")
 	// update existing candlestick
 	if candle, exists := c.candlesticks[key]; exists {
 		lgr.Info(
@@ -64,12 +65,12 @@ func (c *CandlestickService) ProcessTicks(
 		)
 
 		c.candlesticks[key] = &Candlestick{
-			Symbol:    symbol,
-			Open:      price,
-			High:      price,
-			Low:       price,
-			Close:     price,
-			Timestamp: time.Now().Truncate(time.Minute),
+			Symbol:         symbol,
+			Open:           price,
+			High:           price,
+			Low:            price,
+			Close:          price,
+			TradeTimestamp: tradeTimestamp.Truncate(time.Minute),
 		}
 	}
 

@@ -2,7 +2,7 @@ package candlestickrepo
 
 import (
 	"context"
-	"log"
+	"fmt"
 
 	"github.com/ramasbeinaty/trading-chart-service/pkg/domain/candlestick"
 )
@@ -18,10 +18,10 @@ func (repo *_candlestickrepo) UpsertCandlestickBar(
 		bar.High,
 		bar.Low,
 		bar.Close,
+		bar.TradeTimestamp,
 	)
 	if err != nil {
-		log.Printf("Error: failed to upsert candlestickBar - %w", err)
-		return err
+		return fmt.Errorf("Error: failed to upsert candlestickBar - %w", err)
 	}
 
 	return nil

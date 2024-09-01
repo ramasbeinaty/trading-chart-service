@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/ramasbeinaty/trading-chart-service/internal"
+	"github.com/ramasbeinaty/trading-chart-service/pkg/domain/base/utils"
 	"github.com/ramasbeinaty/trading-chart-service/pkg/domain/candlestick"
 	"github.com/ramasbeinaty/trading-chart-service/pkg/infra/clients/binance"
 	"github.com/ramasbeinaty/trading-chart-service/pkg/infra/config"
@@ -41,18 +42,20 @@ func main() {
 	// 	startGRPCServer()
 	// }()
 
-	// - Setup env configs
+	// - Setup infra layer
+	// env configs
 	cfg := config.NewConfig()
 	_binanceConfig := config.NewBinanceConfig(cfg)
 	_dbConfig := config.NewDBConfig(cfg)
 
-	// - Setup infra clients
+	// logger
 	_lgrInstance, err := logger.NewLogger()
 	if err != nil {
 		panic("Error: Failed to initialize logger")
 	}
 	_lgr := _lgrInstance.Get(nil)
 
+	// db
 	_db, err := db.InitializeDB(_dbConfig)
 	if err != nil {
 		panic("Error: Failed to connect to db")
@@ -77,38 +80,44 @@ func main() {
 		panic(fmt.Sprintf("Failed to connect to Binance - %s", err.Error()))
 	}
 
-	wg.Add(1)
-	go func() {
-		for trade := range tradeDataChan {
-			fmt.Printf("Received trade: %v\n", trade)
-		}
-	}()
-
-	// - Setup repositories
+	// setup repositories
 	_candlestickrepo := candlestickrepo.NewCandlestickRepository(_db)
 
-	// - Setup domain services
+	// - Setup domain layer
 	// setup candlestick service
-	// store complete bars every 1 minute
 	_candlestickService := candlestick.NewCandlestickService(
 		_candlestickrepo,
 		_lgrInstance,
 	)
 
-	ticker := time.NewTicker(time.Minute)
-
+	// process candlestick ticks
 	wg.Add(1)
 	go func() {
-		for range ticker.C {
-			err := _candlestickService.CommitCompleteBars(ctx)
+		defer wg.Done()
+		for trade := range tradeDataChan {
+			fmt.Printf("Received trade: %v\n", trade)
+			err := _candlestickService.ProcessTicks(
+				ctx,
+				trade.Symbol,
+				trade.Price,
+				utils.ConvertUnixMillisToTime(trade.TradeTime),
+			)
 			if err != nil {
 				_lgr.Error(
-					"Error: failed to commit complete bars",
-					zap.Error(err),
+					"Failed to process ticks",
+					zap.Any("trade", trade),
 				)
 			}
 		}
 	}()
+
+	// start minute ticker to store complete candlestick bars every 1 minute
+	startMinuteTicker(
+		ctx,
+		_lgr,
+		&wg,
+		_candlestickService,
+	)
 
 	// - Handle system shutdown
 	<-quit
@@ -116,4 +125,34 @@ func main() {
 
 	binanceClient.Close()
 	log.Println("Gracefully terminated the system, exiting...")
+}
+
+func startMinuteTicker(
+	ctx context.Context,
+	lgr *zap.Logger,
+	wg *sync.WaitGroup,
+	candlestickService *candlestick.CandlestickService,
+) {
+	now := time.Now().UTC()
+
+	delay := time.Minute - time.Duration(now.Second())*time.Second -
+		time.Duration(now.Nanosecond())
+
+	time.AfterFunc(delay, func() {
+		ticker := time.NewTicker(time.Minute)
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for range ticker.C {
+				err := candlestickService.CommitCompleteBars(ctx)
+				if err != nil {
+					lgr.Error(
+						"Error: failed to commit complete bars",
+						zap.Error(err),
+					)
+				}
+			}
+		}()
+	},
+	)
 }

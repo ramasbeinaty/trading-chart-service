@@ -21,13 +21,13 @@ func NewCandlestickRepository(db *sql.DB) *_candlestickrepo {
 // Queries
 const (
 	queryUpsertCandlestickBar = `
-	INSERT INTO candlesticks (
+	INSERT INTO candlestick (
 		symbol, 
 		open_price, 
 		high_price, 
 		low_price, 
 		close_price, 
-		timestamp,
+		trade_timestamp
 		)
     VALUES (
 		$1, 
@@ -35,9 +35,9 @@ const (
 		$3, 
 		$4, 
 		$5, 
-		$6,
+		$6
 		)
-    ON CONFLICT (symbol, timestamp) 
+    ON CONFLICT (symbol, trade_timestamp) 
 	DO UPDATE
     SET high_price = EXCLUDED.high_price,
     	low_price = EXCLUDED.low_price,

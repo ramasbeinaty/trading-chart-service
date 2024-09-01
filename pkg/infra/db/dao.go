@@ -5,6 +5,8 @@ func GetMigrationScripts() []MigrationScript {
 		{
 			key: "initial",
 			up: `
+				SET TIMEZONE='UTC';
+
 				CREATE OR REPLACE FUNCTION trigger_set_update_at()
 				RETURNS TRIGGER AS $$
 				BEGIN
@@ -20,10 +22,10 @@ func GetMigrationScripts() []MigrationScript {
 					high_price NUMERIC NOT NULL,
 					low_price NUMERIC NOT NULL,
 					close_price NUMERIC NOT NULL,
-					timestamp TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+					trade_timestamp TIMESTAMP WITH TIME ZONE NOT NULL,
 					created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),  
 					updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-					UNIQUE (symbol, timestamp)
+					UNIQUE (symbol, trade_timestamp)
 				);
 		`,
 			down: `

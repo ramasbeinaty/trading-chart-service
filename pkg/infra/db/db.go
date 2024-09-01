@@ -3,11 +3,12 @@ package db
 import (
 	"context"
 	"database/sql"
-	_ "github.com/lib/pq"
 	"fmt"
 	"log"
 	"sort"
 	"time"
+
+	_ "github.com/lib/pq"
 
 	"go.uber.org/zap"
 )
