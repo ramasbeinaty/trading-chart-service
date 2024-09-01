@@ -6,7 +6,10 @@ import (
 	"time"
 
 	"github.com/ramasbeinaty/trading-chart-service/pkg/domain/base/logger"
+	"github.com/ramasbeinaty/trading-chart-service/pkg/domain/subscription"
+	"github.com/ramasbeinaty/trading-chart-service/proto/candlestick/contracts"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type CandlestickService struct {
@@ -14,17 +17,21 @@ type CandlestickService struct {
 	lgr          logger.ILogger
 	candlesticks map[string]*Candlestick
 	mutex        sync.Mutex
+
+	subscriptionService *subscription.SubscriptionService
 }
 
 func NewCandlestickService(
 	repo IRepository,
 	lgr logger.ILogger,
+	subscriptionService *subscription.SubscriptionService,
 ) *CandlestickService {
 	return &CandlestickService{
-		repo:         repo,
-		lgr:          lgr,
-		candlesticks: make(map[string]*Candlestick),
-		mutex:        sync.Mutex{},
+		repo:                repo,
+		lgr:                 lgr,
+		candlesticks:        make(map[string]*Candlestick),
+		mutex:               sync.Mutex{},
+		subscriptionService: subscriptionService,
 	}
 }
 
@@ -41,11 +48,16 @@ func (c *CandlestickService) ProcessTicks(
 	defer c.mutex.Unlock()
 
 	key := symbol + tradeTimestamp.Truncate(time.Minute).Format("200602011504")
+	var (
+		candle *Candlestick
+		exists bool
+	)
+
 	// update existing candlestick
-	if candle, exists := c.candlesticks[key]; exists {
+	if candle, exists = c.candlesticks[key]; exists {
 		lgr.Info(
 			"Updating existing candlestick",
-			zap.Any("candle", candle),
+			zap.Any("candlestick", candle),
 			zap.String("symbol", symbol),
 			zap.Float64("price", price),
 		)
@@ -72,7 +84,21 @@ func (c *CandlestickService) ProcessTicks(
 			Close:          price,
 			TradeTimestamp: tradeTimestamp.Truncate(time.Minute),
 		}
+
+		candle = c.candlesticks[key]
 	}
+
+	c.subscriptionService.BroadcastToSubscribers(
+		ctx,
+		&contracts.Candlestick{
+			Symbol:         candle.Symbol,
+			OpenPrice:      candle.Open,
+			HighPrice:      candle.High,
+			LowPrice:       candle.Low,
+			ClosePrice:     candle.Close,
+			TradeTimestamp: timestamppb.New(candle.TradeTimestamp),
+		},
+	)
 
 	return nil
 }

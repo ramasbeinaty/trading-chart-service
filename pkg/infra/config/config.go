@@ -6,9 +6,19 @@ import (
 
 	"github.com/ramasbeinaty/trading-chart-service/internal"
 	"github.com/ramasbeinaty/trading-chart-service/pkg/infra/clients/binance"
+	"github.com/ramasbeinaty/trading-chart-service/pkg/infra/clients/snowflake"
 	"github.com/ramasbeinaty/trading-chart-service/pkg/infra/db"
 	"github.com/spf13/viper"
 )
+
+func NewSnowflakeConfig(
+	cfg *viper.Viper,
+) *snowflake.SnowflakeConfig {
+	c := snowflake.SnowflakeConfig{
+		NodeNumber: cfg.GetInt64("SnowflakeConfig.NodeNumber"),
+	}
+	return &c
+}
 
 func NewBinanceConfig(
 	cfg *viper.Viper,

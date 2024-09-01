@@ -5,4 +5,5 @@
 
 package main
 
-//go:generate protoc --proto_path=proto --go_out=contracts --go_opt=paths=source_relative binance/contracts/models.proto
+//go:generate protoc --proto_path=. --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative proto/candlestick/contracts/models.proto
+//go:generate protoc --proto_path=. --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative proto/candlestick/contracts/service.proto

@@ -4,8 +4,10 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log"
+	"net"
 	"os"
 	"os/signal"
 	"sync"
@@ -13,14 +15,19 @@ import (
 	"time"
 
 	"github.com/ramasbeinaty/trading-chart-service/internal"
+	"github.com/ramasbeinaty/trading-chart-service/pkg/app/grpc/handlers"
 	"github.com/ramasbeinaty/trading-chart-service/pkg/domain/base/utils"
 	"github.com/ramasbeinaty/trading-chart-service/pkg/domain/candlestick"
+	"github.com/ramasbeinaty/trading-chart-service/pkg/domain/subscription"
 	"github.com/ramasbeinaty/trading-chart-service/pkg/infra/clients/binance"
+	"github.com/ramasbeinaty/trading-chart-service/pkg/infra/clients/snowflake"
 	"github.com/ramasbeinaty/trading-chart-service/pkg/infra/config"
 	"github.com/ramasbeinaty/trading-chart-service/pkg/infra/db"
 	"github.com/ramasbeinaty/trading-chart-service/pkg/infra/logger"
 	"github.com/ramasbeinaty/trading-chart-service/pkg/infra/repos/candlestickrepo"
+	candlestickpb "github.com/ramasbeinaty/trading-chart-service/proto/candlestick/contracts"
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
 )
 
 func main() {
@@ -35,18 +42,39 @@ func main() {
 
 	// - Start system processes
 	var wg sync.WaitGroup
+	_app := startAppService(ctx, &wg)
 
 	// wg.Add(1)
-	// go func() {
-	// 	defer wg.Done()
-	// 	startGRPCServer()
-	// }()
+	go func() {
+		defer wg.Done()
+		startGRPCServer(_app.lgr, _app.candlestickHandler)
+	}()
 
+	// - Handle system shutdown
+	<-quit
+	log.Println("Shutting down system...")
+
+	_app.binanceClient.Close()
+	log.Println("Gracefully terminated the system, exiting...")
+}
+
+type App struct {
+	lgr                *zap.Logger
+	db                 *sql.DB
+	binanceClient      *binance.BinanceClient
+	candlestickHandler *handlers.CandlestickHandler
+}
+
+func startAppService(
+	ctx context.Context,
+	wg *sync.WaitGroup,
+) *App {
 	// - Setup infra layer
 	// env configs
 	cfg := config.NewConfig()
 	_binanceConfig := config.NewBinanceConfig(cfg)
 	_dbConfig := config.NewDBConfig(cfg)
+	_snowflakeConfig := config.NewSnowflakeConfig(cfg)
 
 	// logger
 	_lgrInstance, err := logger.NewLogger()
@@ -67,16 +95,19 @@ func main() {
 		db.GetMigrationScripts(),
 	)
 
+	// snowflake
+	_snowflakeClient := snowflake.NewSnowflakeClient(ctx, _snowflakeConfig)
+
 	// setup binance connection
 	tradeDataChan := make(chan binance.TradeMessageParsed)
-	binanceClient := binance.NewBinanceClient(
+	_binanceClient := binance.NewBinanceClient(
 		tradeDataChan,
 		binance.AGG_TRADE_STREAM_NAME,
 		internal.TRADE_SYMBOLS,
 		ctx,
 		_binanceConfig,
 	)
-	if err := binanceClient.ConnectToBinance(); err != nil {
+	if err := _binanceClient.ConnectToBinance(); err != nil {
 		panic(fmt.Sprintf("Failed to connect to Binance - %s", err.Error()))
 	}
 
@@ -84,10 +115,19 @@ func main() {
 	_candlestickrepo := candlestickrepo.NewCandlestickRepository(_db)
 
 	// - Setup domain layer
-	// setup candlestick service
+	_subscriptionService := subscription.NewSubscriptionService(_lgrInstance)
+
 	_candlestickService := candlestick.NewCandlestickService(
 		_candlestickrepo,
 		_lgrInstance,
+		_subscriptionService,
+	)
+
+	// - Setup app layer
+	_candlestickHandler := handlers.NewCandlestickHandler(
+		_candlestickService,
+		_subscriptionService,
+		_snowflakeClient,
 	)
 
 	// process candlestick ticks
@@ -115,16 +155,41 @@ func main() {
 	startMinuteTicker(
 		ctx,
 		_lgr,
-		&wg,
+		wg,
 		_candlestickService,
 	)
 
-	// - Handle system shutdown
-	<-quit
-	log.Println("Shutting down system...")
+	return &App{
+		_lgr,
+		_db,
+		_binanceClient,
+		_candlestickHandler,
+	}
+}
 
-	binanceClient.Close()
-	log.Println("Gracefully terminated the system, exiting...")
+func startGRPCServer(
+	lgr *zap.Logger,
+	candlestickHandler *handlers.CandlestickHandler,
+) {
+	lis, err := net.Listen("tcp", ":50051")
+	if err != nil {
+		panic(fmt.Errorf("failed to listen: %v", err))
+	}
+	s := grpc.NewServer()
+
+	candlestickpb.RegisterCandlestickServiceServer(
+		s,
+		candlestickHandler,
+	)
+
+	lgr.Info(
+		"gRPC server listening at",
+		zap.Any("Address", lis.Addr()),
+	)
+
+	if err := s.Serve(lis); err != nil {
+		panic(fmt.Errorf("failed to serve grpc server: %w", err))
+	}
 }
 
 func startMinuteTicker(

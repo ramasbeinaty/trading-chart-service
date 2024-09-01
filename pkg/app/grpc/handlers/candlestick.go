@@ -1,24 +1,98 @@
 package handlers
 
-// type GRPCServer struct {
-// 	Service application.CandlestickService
-// 	pb.UnimplementedCandlestickServiceServer
-// }
+import (
+	"context"
+	"fmt"
 
-// func (s *GRPCServer) BroadcastCandlestick(ctx context.Context, data *pb.CandlestickData) (*pb.CandlestickResponse, error) {
-// 	log.Printf("Received candlestick: %+v", data)
-// 	return &pb.CandlestickResponse{Success: true}, nil
-// }
+	"github.com/ramasbeinaty/trading-chart-service/pkg/domain/candlestick"
+	"github.com/ramasbeinaty/trading-chart-service/pkg/domain/subscription"
+	"github.com/ramasbeinaty/trading-chart-service/pkg/infra/clients/snowflake"
+	candlestickpb "github.com/ramasbeinaty/trading-chart-service/proto/candlestick/contracts"
+)
 
-// func StartGRPCServer(service application.CandlestickService) {
-// 	lis, err := net.Listen("tcp", ":50051")
-// 	if err != nil {
-// 		log.Fatalf("failed to listen: %v", err)
-// 	}
-// 	s := grpc.NewServer()
-// 	pb.RegisterCandlestickServiceServer(s, &GRPCServer{Service: service})
-// 	log.Println("gRPC server listening at", lis.Addr())
-// 	if err := s.Serve(lis); err != nil {
-// 		log.Fatalf("failed to serve: %v", err)
-// 	}
-// }
+type CandlestickHandler struct {
+	candlestickpb.UnimplementedCandlestickServiceServer
+	candlestickService  *candlestick.CandlestickService
+	subscriptionService *subscription.SubscriptionService
+	snowflakeClient     *snowflake.SnowflakeClient
+}
+
+var _ candlestickpb.CandlestickServiceServer = &CandlestickHandler{}
+
+func NewCandlestickHandler(
+	candlestickService *candlestick.CandlestickService,
+	subscriptionService *subscription.SubscriptionService,
+	snowflakeClient *snowflake.SnowflakeClient,
+) *CandlestickHandler {
+	return &CandlestickHandler{
+		candlestickService:  candlestickService,
+		subscriptionService: subscriptionService,
+		snowflakeClient:     snowflakeClient,
+	}
+}
+
+func (h *CandlestickHandler) SubscribeToCandlesticks(
+	req *candlestickpb.StreamRequest,
+	srv candlestickpb.CandlestickService_SubscribeToCandlesticksServer,
+) error {
+	if req.Symbol == "" {
+		return fmt.Errorf("Failed to validate request - symbol must not be empty")
+	}
+
+	var id int64
+	if req.SubscriberId == 0 {
+		var err error
+
+		id, err = h.snowflakeClient.GenerateID()
+		if err != nil {
+			return fmt.Errorf("Failed to generate an id for subscriber")
+		}
+	} else {
+		id = req.SubscriberId
+	}
+
+	ctx, cancel := context.WithCancel(srv.Context())
+
+	err := h.subscriptionService.AddUpdateSubscriber(
+		ctx,
+		cancel,
+		id,
+		req.Symbol,
+		srv,
+	)
+	if err != nil {
+		return fmt.Errorf(
+			"Failed to add symbol %s to subscriber %d",
+			req.Symbol,
+			id,
+		)
+	}
+
+	// cleanup when client disconnects
+	defer h.subscriptionService.RemoveSubscriber(ctx, id, nil)
+
+	// block until context is done or client disconnects
+	<-srv.Context().Done()
+	return srv.Context().Err()
+}
+
+func (h *CandlestickHandler) UnsubscribeFromCandlesticks(
+	ctx context.Context,
+	req *candlestickpb.StreamRequest,
+) (*candlestickpb.GenericResponse, error) {
+	if req.Symbol == "" {
+		return nil, fmt.Errorf("Failed to validate request - symbol must not be empty")
+	}
+	if req.SubscriberId == 0 {
+		return nil, fmt.Errorf("Failed to validate request - a valid subscriber id must be provided")
+	}
+
+	err := h.subscriptionService.RemoveSubscriber(ctx, req.SubscriberId, &req.Symbol)
+	if err != nil {
+		return nil, fmt.Errorf("Unsubscribing failed - %w", err)
+	}
+
+	return &candlestickpb.GenericResponse{
+		Message: "Successfully unsubscribed from " + req.Symbol,
+	}, nil
+}

@@ -1,0 +1,22 @@
+
+syntax = "proto3";
+package candlestick;
+
+option go_package = "github.com/ramasbeinaty/trading-chart-service/proto/candlestick/contracts";
+
+import "proto/candlestick/contracts/models.proto";
+
+import "proto/google/api/annotations.proto";
+
+service CandlestickService {
+    rpc SubscribeToCandlesticks(StreamRequest) returns (stream Candlestick) {
+        option (google.api.http) = {
+            get: "/api/v1/candlestick/symbols/{symbol}/subscribe"
+        };
+    }
+    rpc UnsubscribeFromCandlesticks(StreamRequest) returns (GenericResponse) {
+        option (google.api.http) = {
+            delete: "/api/v1/candlestick/symbols/{symbol}/unsubscribe"
+        };
+    }
+}
