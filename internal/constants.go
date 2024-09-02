@@ -7,4 +7,5 @@ var (
 		"ethusdt",
 		"pepeusdt",
 	}
+	TRACE_CONTEXT_KEY = "TraceContextKey"
 )

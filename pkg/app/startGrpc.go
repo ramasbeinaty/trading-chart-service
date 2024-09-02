@@ -23,7 +23,16 @@ func StartGRPCServer(
 	wg *sync.WaitGroup,
 	candlestickHandler *handlers.CandlestickHandler,
 ) *Grpc {
-	s := grpc.NewServer()
+	opts := []grpc.ServerOption{
+		grpc.UnaryInterceptor(
+			grpc_middleware.ChainUnaryServer(
+				middlewares.RecoveryUnaryInterceptor(lgr),
+				middlewares.DefaultUnaryInterceptor(lgr),
+			),
+		),
+		grpc.StreamInterceptor(middlewares.ContextStreamInterceptor(lgr)),
+	}
+	s := grpc.NewServer(opts...)
 
 	candlestickpb.RegisterCandlestickServiceServer(
 		s,
