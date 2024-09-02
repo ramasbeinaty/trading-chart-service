@@ -29,7 +29,7 @@ func NewSubscriptionService(
 func (m *SubscriptionService) AddUpdateSubscriber(
 	ctx context.Context,
 	subscriberId int64,
-	symbol string,
+	symbols []string,
 	stream contracts.CandlestickService_SubscribeToCandlesticksServer,
 ) error {
 	m.mutex.Lock()
@@ -39,20 +39,27 @@ func (m *SubscriptionService) AddUpdateSubscriber(
 	lgr.Info(
 		"Adding a subscriber",
 		zap.Int64("subscriberId", subscriberId),
-		zap.String("symbol", symbol),
+		zap.Strings("symbols", symbols),
 		zap.Any("stream", stream),
 	)
 
 	sub, exists := m.GetSubscriber(subscriberId)
 	if exists {
 		lgr.Info("Updating existing subscriber")
-		sub.Symbols[symbol] = true
+		for _, s := range symbols {
+			sub.Symbols[s] = true
+		}
 	} else {
 		lgr.Info("Creating a new subscriber")
 
+		_symbols := map[string]bool{}
+		for _, s := range symbols {
+			_symbols[s] = true
+		}
+
 		sub = &Subscriber{
 			ID:      subscriberId,
-			Symbols: map[string]bool{symbol: true},
+			Symbols: _symbols,
 			Stream:  stream,
 		}
 
@@ -67,12 +74,12 @@ func (m *SubscriptionService) GetSubscriber(id int64) (*Subscriber, bool) {
 	return sub, exists
 }
 
-// if symbol is nil, remove subscriber and disconnect them from stream
-// otherwise, unsubscribe the subscriber from the symbol
+// if no symbol is provided, remove the subscriber and disconnect them from stream
+// otherwise, just unsubscribe the subscriber from the symbol broadcast
 func (m *SubscriptionService) RemoveSubscriber(
 	ctx context.Context,
 	subscriberId int64,
-	symbol *string,
+	symbols []string,
 ) error {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
@@ -85,8 +92,10 @@ func (m *SubscriptionService) RemoveSubscriber(
 		return nil
 	}
 
-	if symbol != nil && *symbol != "" {
-		delete(sub.Symbols, *symbol)
+	if len(symbols) != 0 {
+		for _, s := range symbols {
+			delete(sub.Symbols, s)
+		}
 
 		// if not subscribed to any symbols, remove the subscriber and terminate stream
 		if len(sub.Symbols) == 0 {

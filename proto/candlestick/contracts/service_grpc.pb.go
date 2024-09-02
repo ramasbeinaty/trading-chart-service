@@ -27,8 +27,8 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type CandlestickServiceClient interface {
-	SubscribeToCandlesticks(ctx context.Context, in *StreamRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[Candlestick], error)
-	UnsubscribeFromCandlesticks(ctx context.Context, in *StreamRequest, opts ...grpc.CallOption) (*GenericResponse, error)
+	SubscribeToCandlesticks(ctx context.Context, in *SubscribeToStreamRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[Candlestick], error)
+	UnsubscribeFromCandlesticks(ctx context.Context, in *UnsubscribeFromStreamRequest, opts ...grpc.CallOption) (*GenericResponse, error)
 }
 
 type candlestickServiceClient struct {
@@ -39,13 +39,13 @@ func NewCandlestickServiceClient(cc grpc.ClientConnInterface) CandlestickService
 	return &candlestickServiceClient{cc}
 }
 
-func (c *candlestickServiceClient) SubscribeToCandlesticks(ctx context.Context, in *StreamRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[Candlestick], error) {
+func (c *candlestickServiceClient) SubscribeToCandlesticks(ctx context.Context, in *SubscribeToStreamRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[Candlestick], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	stream, err := c.cc.NewStream(ctx, &CandlestickService_ServiceDesc.Streams[0], CandlestickService_SubscribeToCandlesticks_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &grpc.GenericClientStream[StreamRequest, Candlestick]{ClientStream: stream}
+	x := &grpc.GenericClientStream[SubscribeToStreamRequest, Candlestick]{ClientStream: stream}
 	if err := x.ClientStream.SendMsg(in); err != nil {
 		return nil, err
 	}
@@ -58,7 +58,7 @@ func (c *candlestickServiceClient) SubscribeToCandlesticks(ctx context.Context, 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type CandlestickService_SubscribeToCandlesticksClient = grpc.ServerStreamingClient[Candlestick]
 
-func (c *candlestickServiceClient) UnsubscribeFromCandlesticks(ctx context.Context, in *StreamRequest, opts ...grpc.CallOption) (*GenericResponse, error) {
+func (c *candlestickServiceClient) UnsubscribeFromCandlesticks(ctx context.Context, in *UnsubscribeFromStreamRequest, opts ...grpc.CallOption) (*GenericResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GenericResponse)
 	err := c.cc.Invoke(ctx, CandlestickService_UnsubscribeFromCandlesticks_FullMethodName, in, out, cOpts...)
@@ -72,8 +72,8 @@ func (c *candlestickServiceClient) UnsubscribeFromCandlesticks(ctx context.Conte
 // All implementations must embed UnimplementedCandlestickServiceServer
 // for forward compatibility.
 type CandlestickServiceServer interface {
-	SubscribeToCandlesticks(*StreamRequest, grpc.ServerStreamingServer[Candlestick]) error
-	UnsubscribeFromCandlesticks(context.Context, *StreamRequest) (*GenericResponse, error)
+	SubscribeToCandlesticks(*SubscribeToStreamRequest, grpc.ServerStreamingServer[Candlestick]) error
+	UnsubscribeFromCandlesticks(context.Context, *UnsubscribeFromStreamRequest) (*GenericResponse, error)
 	mustEmbedUnimplementedCandlestickServiceServer()
 }
 
@@ -84,10 +84,10 @@ type CandlestickServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedCandlestickServiceServer struct{}
 
-func (UnimplementedCandlestickServiceServer) SubscribeToCandlesticks(*StreamRequest, grpc.ServerStreamingServer[Candlestick]) error {
+func (UnimplementedCandlestickServiceServer) SubscribeToCandlesticks(*SubscribeToStreamRequest, grpc.ServerStreamingServer[Candlestick]) error {
 	return status.Errorf(codes.Unimplemented, "method SubscribeToCandlesticks not implemented")
 }
-func (UnimplementedCandlestickServiceServer) UnsubscribeFromCandlesticks(context.Context, *StreamRequest) (*GenericResponse, error) {
+func (UnimplementedCandlestickServiceServer) UnsubscribeFromCandlesticks(context.Context, *UnsubscribeFromStreamRequest) (*GenericResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UnsubscribeFromCandlesticks not implemented")
 }
 func (UnimplementedCandlestickServiceServer) mustEmbedUnimplementedCandlestickServiceServer() {}
@@ -112,18 +112,18 @@ func RegisterCandlestickServiceServer(s grpc.ServiceRegistrar, srv CandlestickSe
 }
 
 func _CandlestickService_SubscribeToCandlesticks_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(StreamRequest)
+	m := new(SubscribeToStreamRequest)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
-	return srv.(CandlestickServiceServer).SubscribeToCandlesticks(m, &grpc.GenericServerStream[StreamRequest, Candlestick]{ServerStream: stream})
+	return srv.(CandlestickServiceServer).SubscribeToCandlesticks(m, &grpc.GenericServerStream[SubscribeToStreamRequest, Candlestick]{ServerStream: stream})
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type CandlestickService_SubscribeToCandlesticksServer = grpc.ServerStreamingServer[Candlestick]
 
 func _CandlestickService_UnsubscribeFromCandlesticks_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(StreamRequest)
+	in := new(UnsubscribeFromStreamRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -135,7 +135,7 @@ func _CandlestickService_UnsubscribeFromCandlesticks_Handler(srv interface{}, ct
 		FullMethod: CandlestickService_UnsubscribeFromCandlesticks_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CandlestickServiceServer).UnsubscribeFromCandlesticks(ctx, req.(*StreamRequest))
+		return srv.(CandlestickServiceServer).UnsubscribeFromCandlesticks(ctx, req.(*UnsubscribeFromStreamRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }

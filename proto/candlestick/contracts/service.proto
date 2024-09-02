@@ -9,14 +9,18 @@ import "proto/candlestick/contracts/models.proto";
 import "proto/google/api/annotations.proto";
 
 service CandlestickService {
-    rpc SubscribeToCandlesticks(StreamRequest) returns (stream Candlestick) {
+    rpc SubscribeToCandlesticks(SubscribeToStreamRequest) returns (stream Candlestick) {
         option (google.api.http) = {
-            get: "/api/v1/candlestick/symbols/{symbol}/subscribe"
+            get: "/api/v1/candlestick/subscribe"
+            additional_bindings {
+                get: "/api/v1/candlestick/subscribe?symbol={symbol}"
+            }
         };
     }
-    rpc UnsubscribeFromCandlesticks(StreamRequest) returns (GenericResponse) {
+    rpc UnsubscribeFromCandlesticks(UnsubscribeFromStreamRequest) returns (GenericResponse) {
         option (google.api.http) = {
-            delete: "/api/v1/candlestick/symbols/{symbol}/unsubscribe"
+            delete: "/api/v1/candlestick/unsubscribe"
+            body: "*"
         };
     }
 }

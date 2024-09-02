@@ -32,35 +32,28 @@ func NewCandlestickHandler(
 }
 
 func (h *CandlestickHandler) SubscribeToCandlesticks(
-	req *candlestickpb.StreamRequest,
+	req *candlestickpb.SubscribeToStreamRequest,
 	srv candlestickpb.CandlestickService_SubscribeToCandlesticksServer,
 ) error {
-	if req.Symbol == "" {
+	if len(req.Symbols) == 0 {
 		return fmt.Errorf("Failed to validate request - symbol must not be empty")
 	}
 
-	var id int64
-	if req.SubscriberId == 0 {
-		var err error
-
-		id, err = h.uidService.GenerateUID()
-		if err != nil {
-			return fmt.Errorf("Failed to generate an id for subscriber")
-		}
-	} else {
-		id = req.SubscriberId
+	id, err := h.uidService.GenerateUID()
+	if err != nil {
+		return fmt.Errorf("Failed to generate an id for subscriber")
 	}
 
-	err := h.subscriptionService.AddUpdateSubscriber(
+	err = h.subscriptionService.AddUpdateSubscriber(
 		srv.Context(),
 		id,
-		req.Symbol,
+		req.Symbols,
 		srv,
 	)
 	if err != nil {
 		return fmt.Errorf(
-			"Failed to add symbol %s to subscriber %d",
-			req.Symbol,
+			"Failed to add symbols %v to subscriber %d",
+			req.Symbols,
 			id,
 		)
 	}
@@ -73,23 +66,28 @@ func (h *CandlestickHandler) SubscribeToCandlesticks(
 	return srv.Context().Err()
 }
 
+// if not symbols are provided, will unsubscribe from all symbols
 func (h *CandlestickHandler) UnsubscribeFromCandlesticks(
 	ctx context.Context,
-	req *candlestickpb.StreamRequest,
+	req *candlestickpb.UnsubscribeFromStreamRequest,
 ) (*candlestickpb.GenericResponse, error) {
-	if req.Symbol == "" {
-		return nil, fmt.Errorf("Failed to validate request - symbol must not be empty")
-	}
 	if req.SubscriberId == 0 {
 		return nil, fmt.Errorf("Failed to validate request - a valid subscriber id must be provided")
 	}
 
-	err := h.subscriptionService.RemoveSubscriber(ctx, req.SubscriberId, &req.Symbol)
+	err := h.subscriptionService.RemoveSubscriber(ctx, req.SubscriberId, req.Symbols)
 	if err != nil {
 		return nil, fmt.Errorf("Unsubscribing failed - %w", err)
 	}
 
+	var message string
+	if len(req.Symbols) != 0 {
+		message = fmt.Sprintf("Successfully unsubscribed from %s", req.Symbols)
+	} else {
+		message = fmt.Sprintf("Successfully unsubscribed from all")
+	}
+
 	return &candlestickpb.GenericResponse{
-		Message: "Successfully unsubscribed from " + req.Symbol,
+		Message: message,
 	}, nil
 }

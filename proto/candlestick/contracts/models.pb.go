@@ -108,17 +108,16 @@ func (x *Candlestick) GetTradeTimestamp() *timestamppb.Timestamp {
 	return nil
 }
 
-type StreamRequest struct {
+type SubscribeToStreamRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Symbol       string `protobuf:"bytes,1,opt,name=symbol,proto3" json:"symbol,omitempty"`
-	SubscriberId int64  `protobuf:"varint,2,opt,name=subscriber_id,json=subscriberId,proto3" json:"subscriber_id,omitempty"`
+	Symbols []string `protobuf:"bytes,1,rep,name=symbols,proto3" json:"symbols,omitempty"`
 }
 
-func (x *StreamRequest) Reset() {
-	*x = StreamRequest{}
+func (x *SubscribeToStreamRequest) Reset() {
+	*x = SubscribeToStreamRequest{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_proto_candlestick_contracts_models_proto_msgTypes[1]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -126,13 +125,13 @@ func (x *StreamRequest) Reset() {
 	}
 }
 
-func (x *StreamRequest) String() string {
+func (x *SubscribeToStreamRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*StreamRequest) ProtoMessage() {}
+func (*SubscribeToStreamRequest) ProtoMessage() {}
 
-func (x *StreamRequest) ProtoReflect() protoreflect.Message {
+func (x *SubscribeToStreamRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_proto_candlestick_contracts_models_proto_msgTypes[1]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -144,19 +143,67 @@ func (x *StreamRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use StreamRequest.ProtoReflect.Descriptor instead.
-func (*StreamRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use SubscribeToStreamRequest.ProtoReflect.Descriptor instead.
+func (*SubscribeToStreamRequest) Descriptor() ([]byte, []int) {
 	return file_proto_candlestick_contracts_models_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *StreamRequest) GetSymbol() string {
+func (x *SubscribeToStreamRequest) GetSymbols() []string {
 	if x != nil {
-		return x.Symbol
+		return x.Symbols
 	}
-	return ""
+	return nil
 }
 
-func (x *StreamRequest) GetSubscriberId() int64 {
+type UnsubscribeFromStreamRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Symbols      []string `protobuf:"bytes,1,rep,name=symbols,proto3" json:"symbols,omitempty"`
+	SubscriberId int64    `protobuf:"varint,2,opt,name=subscriber_id,json=subscriberId,proto3" json:"subscriber_id,omitempty"`
+}
+
+func (x *UnsubscribeFromStreamRequest) Reset() {
+	*x = UnsubscribeFromStreamRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_proto_candlestick_contracts_models_proto_msgTypes[2]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *UnsubscribeFromStreamRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UnsubscribeFromStreamRequest) ProtoMessage() {}
+
+func (x *UnsubscribeFromStreamRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_candlestick_contracts_models_proto_msgTypes[2]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UnsubscribeFromStreamRequest.ProtoReflect.Descriptor instead.
+func (*UnsubscribeFromStreamRequest) Descriptor() ([]byte, []int) {
+	return file_proto_candlestick_contracts_models_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *UnsubscribeFromStreamRequest) GetSymbols() []string {
+	if x != nil {
+		return x.Symbols
+	}
+	return nil
+}
+
+func (x *UnsubscribeFromStreamRequest) GetSubscriberId() int64 {
 	if x != nil {
 		return x.SubscriberId
 	}
@@ -174,7 +221,7 @@ type GenericResponse struct {
 func (x *GenericResponse) Reset() {
 	*x = GenericResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_proto_candlestick_contracts_models_proto_msgTypes[2]
+		mi := &file_proto_candlestick_contracts_models_proto_msgTypes[3]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -187,7 +234,7 @@ func (x *GenericResponse) String() string {
 func (*GenericResponse) ProtoMessage() {}
 
 func (x *GenericResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_candlestick_contracts_models_proto_msgTypes[2]
+	mi := &file_proto_candlestick_contracts_models_proto_msgTypes[3]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -200,7 +247,7 @@ func (x *GenericResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GenericResponse.ProtoReflect.Descriptor instead.
 func (*GenericResponse) Descriptor() ([]byte, []int) {
-	return file_proto_candlestick_contracts_models_proto_rawDescGZIP(), []int{2}
+	return file_proto_candlestick_contracts_models_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *GenericResponse) GetMessage() string {
@@ -233,20 +280,24 @@ var file_proto_candlestick_contracts_models_proto_rawDesc = []byte{
 	0x06, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70,
 	0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x54, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d,
 	0x70, 0x52, 0x0e, 0x74, 0x72, 0x61, 0x64, 0x65, 0x54, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d,
-	0x70, 0x22, 0x4c, 0x0a, 0x0d, 0x53, 0x74, 0x72, 0x65, 0x61, 0x6d, 0x52, 0x65, 0x71, 0x75, 0x65,
-	0x73, 0x74, 0x12, 0x16, 0x0a, 0x06, 0x73, 0x79, 0x6d, 0x62, 0x6f, 0x6c, 0x18, 0x01, 0x20, 0x01,
-	0x28, 0x09, 0x52, 0x06, 0x73, 0x79, 0x6d, 0x62, 0x6f, 0x6c, 0x12, 0x23, 0x0a, 0x0d, 0x73, 0x75,
-	0x62, 0x73, 0x63, 0x72, 0x69, 0x62, 0x65, 0x72, 0x5f, 0x69, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28,
-	0x03, 0x52, 0x0c, 0x73, 0x75, 0x62, 0x73, 0x63, 0x72, 0x69, 0x62, 0x65, 0x72, 0x49, 0x64, 0x22,
-	0x2b, 0x0a, 0x0f, 0x47, 0x65, 0x6e, 0x65, 0x72, 0x69, 0x63, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e,
-	0x73, 0x65, 0x12, 0x18, 0x0a, 0x07, 0x6d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x18, 0x01, 0x20,
-	0x01, 0x28, 0x09, 0x52, 0x07, 0x6d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x42, 0x4b, 0x5a, 0x49,
-	0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x72, 0x61, 0x6d, 0x61, 0x73,
-	0x62, 0x65, 0x69, 0x6e, 0x61, 0x74, 0x79, 0x2f, 0x74, 0x72, 0x61, 0x64, 0x69, 0x6e, 0x67, 0x2d,
-	0x63, 0x68, 0x61, 0x72, 0x74, 0x2d, 0x73, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x2f, 0x70, 0x72,
-	0x6f, 0x74, 0x6f, 0x2f, 0x63, 0x61, 0x6e, 0x64, 0x6c, 0x65, 0x73, 0x74, 0x69, 0x63, 0x6b, 0x2f,
-	0x63, 0x6f, 0x6e, 0x74, 0x72, 0x61, 0x63, 0x74, 0x73, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f,
-	0x33,
+	0x70, 0x22, 0x34, 0x0a, 0x18, 0x53, 0x75, 0x62, 0x73, 0x63, 0x72, 0x69, 0x62, 0x65, 0x54, 0x6f,
+	0x53, 0x74, 0x72, 0x65, 0x61, 0x6d, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x18, 0x0a,
+	0x07, 0x73, 0x79, 0x6d, 0x62, 0x6f, 0x6c, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x09, 0x52, 0x07,
+	0x73, 0x79, 0x6d, 0x62, 0x6f, 0x6c, 0x73, 0x22, 0x5d, 0x0a, 0x1c, 0x55, 0x6e, 0x73, 0x75, 0x62,
+	0x73, 0x63, 0x72, 0x69, 0x62, 0x65, 0x46, 0x72, 0x6f, 0x6d, 0x53, 0x74, 0x72, 0x65, 0x61, 0x6d,
+	0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x18, 0x0a, 0x07, 0x73, 0x79, 0x6d, 0x62, 0x6f,
+	0x6c, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x09, 0x52, 0x07, 0x73, 0x79, 0x6d, 0x62, 0x6f, 0x6c,
+	0x73, 0x12, 0x23, 0x0a, 0x0d, 0x73, 0x75, 0x62, 0x73, 0x63, 0x72, 0x69, 0x62, 0x65, 0x72, 0x5f,
+	0x69, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x03, 0x52, 0x0c, 0x73, 0x75, 0x62, 0x73, 0x63, 0x72,
+	0x69, 0x62, 0x65, 0x72, 0x49, 0x64, 0x22, 0x2b, 0x0a, 0x0f, 0x47, 0x65, 0x6e, 0x65, 0x72, 0x69,
+	0x63, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x18, 0x0a, 0x07, 0x6d, 0x65, 0x73,
+	0x73, 0x61, 0x67, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x6d, 0x65, 0x73, 0x73,
+	0x61, 0x67, 0x65, 0x42, 0x4b, 0x5a, 0x49, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f,
+	0x6d, 0x2f, 0x72, 0x61, 0x6d, 0x61, 0x73, 0x62, 0x65, 0x69, 0x6e, 0x61, 0x74, 0x79, 0x2f, 0x74,
+	0x72, 0x61, 0x64, 0x69, 0x6e, 0x67, 0x2d, 0x63, 0x68, 0x61, 0x72, 0x74, 0x2d, 0x73, 0x65, 0x72,
+	0x76, 0x69, 0x63, 0x65, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2f, 0x63, 0x61, 0x6e, 0x64, 0x6c,
+	0x65, 0x73, 0x74, 0x69, 0x63, 0x6b, 0x2f, 0x63, 0x6f, 0x6e, 0x74, 0x72, 0x61, 0x63, 0x74, 0x73,
+	0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -261,15 +312,16 @@ func file_proto_candlestick_contracts_models_proto_rawDescGZIP() []byte {
 	return file_proto_candlestick_contracts_models_proto_rawDescData
 }
 
-var file_proto_candlestick_contracts_models_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_proto_candlestick_contracts_models_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_proto_candlestick_contracts_models_proto_goTypes = []any{
-	(*Candlestick)(nil),           // 0: candlestick.Candlestick
-	(*StreamRequest)(nil),         // 1: candlestick.StreamRequest
-	(*GenericResponse)(nil),       // 2: candlestick.GenericResponse
-	(*timestamppb.Timestamp)(nil), // 3: google.protobuf.Timestamp
+	(*Candlestick)(nil),                  // 0: candlestick.Candlestick
+	(*SubscribeToStreamRequest)(nil),     // 1: candlestick.SubscribeToStreamRequest
+	(*UnsubscribeFromStreamRequest)(nil), // 2: candlestick.UnsubscribeFromStreamRequest
+	(*GenericResponse)(nil),              // 3: candlestick.GenericResponse
+	(*timestamppb.Timestamp)(nil),        // 4: google.protobuf.Timestamp
 }
 var file_proto_candlestick_contracts_models_proto_depIdxs = []int32{
-	3, // 0: candlestick.Candlestick.trade_timestamp:type_name -> google.protobuf.Timestamp
+	4, // 0: candlestick.Candlestick.trade_timestamp:type_name -> google.protobuf.Timestamp
 	1, // [1:1] is the sub-list for method output_type
 	1, // [1:1] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name
@@ -296,7 +348,7 @@ func file_proto_candlestick_contracts_models_proto_init() {
 			}
 		}
 		file_proto_candlestick_contracts_models_proto_msgTypes[1].Exporter = func(v any, i int) any {
-			switch v := v.(*StreamRequest); i {
+			switch v := v.(*SubscribeToStreamRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -308,6 +360,18 @@ func file_proto_candlestick_contracts_models_proto_init() {
 			}
 		}
 		file_proto_candlestick_contracts_models_proto_msgTypes[2].Exporter = func(v any, i int) any {
+			switch v := v.(*UnsubscribeFromStreamRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_proto_candlestick_contracts_models_proto_msgTypes[3].Exporter = func(v any, i int) any {
 			switch v := v.(*GenericResponse); i {
 			case 0:
 				return &v.state
@@ -326,7 +390,7 @@ func file_proto_candlestick_contracts_models_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_proto_candlestick_contracts_models_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   3,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

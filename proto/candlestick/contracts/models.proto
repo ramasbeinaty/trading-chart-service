@@ -14,8 +14,12 @@ message Candlestick {
     google.protobuf.Timestamp trade_timestamp = 6;
 }
 
-message StreamRequest {
-    string symbol = 1;
+message SubscribeToStreamRequest {
+    repeated string symbols = 1;
+}
+
+message UnsubscribeFromStreamRequest {
+    repeated string symbols = 1;
     int64 subscriber_id = 2;
 }
 
