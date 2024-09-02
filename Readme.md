@@ -1,36 +1,52 @@
-# TODO
-- test grpc server
-- update dockerfile
-- update readme file with running instructions
 
-# Start Here
-## Run the app using the command (Change to dockerfile)
-`go run .`
+# README for Trading Chart Service
 
-## You can use grpcurl to query grpc server
-**To list the available methods**
+## App Functionalities
+- Reads tick data from binance data stream 
+- Aggregates this data into OHLC Candlesticks with timeframe of 1 minute
+- Serves a GRPC server
+- Broadcasts the current symbol Candlestick bar to its subscribers
+- Stores complete Candlestick bars in a Postgres database
 
-`grpcurl -plaintext localhost:50051 list candlestick.CandlestickService
-`
+## Start Here
 
-**To describe available methods**
+### 1. Run the App
+To run the app using the command (assuming a transition to Docker is planned):
+```bash
+go run .
+```
 
-`grpcurl -plaintext localhost:50051 describe candlestick.CandlestickService.SubscribeToCandlesticks
-`
+### 2. Use grpcurl to Query the gRPC Server
+**Note:** Below commands have been tested with bash. Might need to format for other terminals.
 
-`grpcurl -plaintext localhost:50051 describe candlestick.CandlestickService.UnsubscribeFromCandlesticks
-`
+#### List Available Methods
+```bash
+grpcurl -plaintext localhost:50051 list candlestick.CandlestickService
+```
 
-### Invoke available methods
-For testing, set DEV_MODE = TRUE in docker-compose
-The subscriber_id would then be set using a counter. So the first subscriber will have the id 1, second subscriber will have the id 2, etc.
+#### Describe Available Methods
+```bash
+grpcurl -plaintext localhost:50051 describe candlestick.CandlestickService.SubscribeToCandlesticks
 
-- **SubscribeToCandlesticks**
+grpcurl -plaintext localhost:50051 describe candlestick.CandlestickService.UnsubscribeFromCandlesticks
+```
 
-`grpcurl -plaintext -d '{\"symbol\": \"BTCUSDT\"}' localhost:50051 candlestick.CandlestickService.SubscribeToCandlesticks
-`
+### 3. Start Testing gRPC Server
+**For testing**, set `DEV_MODE=TRUE` in `docker-compose.yml`. The `subscriber_id` would then be set using a counter, meaning the first subscriber will have the ID 1, the second subscriber will have the id 2, etc.
 
-- **UnsubscribeFromCandlesticks**
+#### SubscribeToCandlesticks
+To subscribe to a single or multiple symbols
 
-`grpcurl -plaintext -d '{\"symbol\": \"BTCUSDT\", \"subscriber_id\": 1}' localhost:50051 candlestick.CandlestickService.UnsubscribeFromCandlesticks
-`
+```bash
+grpcurl -plaintext -d '{"symbols": ["BTCUSDT", "ETHUSDT", "PEPEUSDT"]}' localhost:50051 candlestick.CandlestickService.SubscribeToCandlesticks
+```
+#### UnsubscribeFromCandlesticks
+To unsubscribe from specific symbol(s)
+```bash
+grpcurl -plaintext -d '{"symbols": ["BTCUSDT", "ETHUSDT"], "subscriber_id": 1}' localhost:50051 candlestick.CandlestickService.UnsubscribeFromCandlesticks
+```
+
+To unsubscribe from all symbols
+```bash
+grpcurl -plaintext -d '{"subscriber_id": 1}' localhost:50051 candlestick.CandlestickService.UnsubscribeFromCandlesticks
+```
