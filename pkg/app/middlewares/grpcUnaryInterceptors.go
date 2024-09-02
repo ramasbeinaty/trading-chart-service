@@ -60,6 +60,7 @@ func DefaultUnaryInterceptor(
 			if _, ok := status.FromError(err); !ok {
 				// default to an internal error if err can't be converted
 				err = status.Errorf(codes.Internal, "An internal error occurred")
+				return nil, err
 			}
 		}
 

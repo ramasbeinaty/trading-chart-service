@@ -30,7 +30,11 @@ func StartGRPCServer(
 				middlewares.DefaultUnaryInterceptor(lgr),
 			),
 		),
-		grpc.StreamInterceptor(middlewares.ContextStreamInterceptor(lgr)),
+		grpc.StreamInterceptor(
+			grpc_middleware.ChainStreamServer(
+				middlewares.RecoveryStreamInterceptor(lgr),
+				middlewares.DefaultStreamInterceptor(lgr)),
+		),
 	}
 	s := grpc.NewServer(opts...)
 
