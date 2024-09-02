@@ -36,7 +36,7 @@ func (m *SubscriptionService) AddUpdateSubscriber(
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 
-	lgr := m.lgr.Get(&ctx)
+	lgr := m.lgr.Get(ctx)
 	lgr.Info(
 		"Adding a subscriber",
 		zap.Int64("subscriberId", subscriberId),
@@ -82,7 +82,7 @@ func (m *SubscriptionService) RemoveSubscriber(
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 
-	lgr := m.lgr.Get(&ctx)
+	lgr := m.lgr.Get(ctx)
 
 	sub, exists := m.GetSubscriber(subscriberId)
 	if !exists {
@@ -113,7 +113,7 @@ func (m *SubscriptionService) BroadcastToSubscribers(
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 
-	lgr := m.lgr.Get(&ctx)
+	lgr := m.lgr.Get(ctx)
 	for _, sub := range m.subscribers {
 		if _, ok := sub.Symbols[candlestick.Symbol]; ok {
 			if err := sub.Stream.Send(candlestick); err != nil {

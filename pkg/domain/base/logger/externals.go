@@ -8,10 +8,7 @@ import (
 
 type ILogger interface {
 	Get(
-		ctx *context.Context,
-	) *zap.Logger
-	GetWithTraceContext(
-		traceContext string,
+		ctx context.Context,
 	) *zap.Logger
 	Close()
 }

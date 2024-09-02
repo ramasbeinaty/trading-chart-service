@@ -41,7 +41,7 @@ func (c *CandlestickService) ProcessTicks(
 	price float64,
 	tradeTimestamp time.Time,
 ) error {
-	lgr := c.lgr.Get(&ctx)
+	lgr := c.lgr.Get(ctx)
 	lgr.Info("Processing ticks...")
 
 	c.mutex.Lock()
@@ -106,7 +106,7 @@ func (c *CandlestickService) ProcessTicks(
 func (c *CandlestickService) CommitCompleteBars(
 	ctx context.Context,
 ) error {
-	lgr := c.lgr.Get(&ctx)
+	lgr := c.lgr.Get(ctx)
 	lgr.Info("Committing complete bars...")
 
 	c.mutex.Lock()
