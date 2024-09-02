@@ -11,6 +11,7 @@ import (
 	candlestickpb "github.com/ramasbeinaty/trading-chart-service/proto/candlestick/contracts"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 )
 
 type Grpc struct {
@@ -42,6 +43,9 @@ func StartGRPCServer(
 		s,
 		candlestickHandler,
 	)
+
+	// to query grpc server using grpcurl
+	reflection.Register(s)
 
 	wg.Add(1)
 	go func() {

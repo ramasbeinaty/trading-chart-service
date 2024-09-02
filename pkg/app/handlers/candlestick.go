@@ -6,7 +6,7 @@ import (
 
 	"github.com/ramasbeinaty/trading-chart-service/pkg/domain/candlestick"
 	"github.com/ramasbeinaty/trading-chart-service/pkg/domain/subscription"
-	"github.com/ramasbeinaty/trading-chart-service/pkg/infra/clients/snowflake"
+	"github.com/ramasbeinaty/trading-chart-service/pkg/domain/uids"
 	candlestickpb "github.com/ramasbeinaty/trading-chart-service/proto/candlestick/contracts"
 )
 
@@ -14,7 +14,7 @@ type CandlestickHandler struct {
 	candlestickpb.UnimplementedCandlestickServiceServer
 	candlestickService  *candlestick.CandlestickService
 	subscriptionService *subscription.SubscriptionService
-	snowflakeClient     *snowflake.SnowflakeClient
+	uidService          *uids.UIDService
 }
 
 var _ candlestickpb.CandlestickServiceServer = &CandlestickHandler{}
@@ -22,12 +22,12 @@ var _ candlestickpb.CandlestickServiceServer = &CandlestickHandler{}
 func NewCandlestickHandler(
 	candlestickService *candlestick.CandlestickService,
 	subscriptionService *subscription.SubscriptionService,
-	snowflakeClient *snowflake.SnowflakeClient,
+	uidService *uids.UIDService,
 ) *CandlestickHandler {
 	return &CandlestickHandler{
 		candlestickService:  candlestickService,
 		subscriptionService: subscriptionService,
-		snowflakeClient:     snowflakeClient,
+		uidService:          uidService,
 	}
 }
 
@@ -43,7 +43,7 @@ func (h *CandlestickHandler) SubscribeToCandlesticks(
 	if req.SubscriberId == 0 {
 		var err error
 
-		id, err = h.snowflakeClient.GenerateID()
+		id, err = h.uidService.GenerateUID()
 		if err != nil {
 			return fmt.Errorf("Failed to generate an id for subscriber")
 		}
@@ -51,11 +51,8 @@ func (h *CandlestickHandler) SubscribeToCandlesticks(
 		id = req.SubscriberId
 	}
 
-	ctx, cancel := context.WithCancel(srv.Context())
-
 	err := h.subscriptionService.AddUpdateSubscriber(
-		ctx,
-		cancel,
+		srv.Context(),
 		id,
 		req.Symbol,
 		srv,
@@ -69,7 +66,7 @@ func (h *CandlestickHandler) SubscribeToCandlesticks(
 	}
 
 	// cleanup when client disconnects
-	defer h.subscriptionService.RemoveSubscriber(ctx, id, nil)
+	defer h.subscriptionService.RemoveSubscriber(srv.Context(), id, nil)
 
 	// block until context is done or client disconnects
 	<-srv.Context().Done()

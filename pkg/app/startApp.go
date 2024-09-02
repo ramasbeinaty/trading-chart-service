@@ -12,6 +12,7 @@ import (
 	"github.com/ramasbeinaty/trading-chart-service/pkg/domain/base/utils"
 	"github.com/ramasbeinaty/trading-chart-service/pkg/domain/candlestick"
 	"github.com/ramasbeinaty/trading-chart-service/pkg/domain/subscription"
+	"github.com/ramasbeinaty/trading-chart-service/pkg/domain/uids"
 	"github.com/ramasbeinaty/trading-chart-service/pkg/infra/clients/binance"
 	"github.com/ramasbeinaty/trading-chart-service/pkg/infra/clients/snowflake"
 	"github.com/ramasbeinaty/trading-chart-service/pkg/infra/config"
@@ -35,6 +36,7 @@ func StartAppService(
 	// ========= Setup infra layer =========
 	// env configs
 	cfg := config.NewConfig()
+	_envConfig := config.NewInternalEnvConfig(cfg)
 	_binanceConfig := config.NewBinanceConfig(cfg)
 	_dbConfig := config.NewDBConfig(cfg)
 	_snowflakeConfig := config.NewSnowflakeConfig(cfg)
@@ -75,6 +77,12 @@ func StartAppService(
 	_candlestickrepo := candlestickrepo.NewCandlestickRepository(_db)
 
 	// ========= Setup domain layer =========
+	_uidService := uids.NewUIDService(
+		_lgrInstance,
+		_envConfig.IsDevMode,
+		_snowflakeClient,
+	)
+
 	_subscriptionService := subscription.NewSubscriptionService(_lgrInstance)
 
 	_candlestickService := candlestick.NewCandlestickService(
@@ -87,7 +95,7 @@ func StartAppService(
 	_candlestickHandler := handlers.NewCandlestickHandler(
 		_candlestickService,
 		_subscriptionService,
-		_snowflakeClient,
+		_uidService,
 	)
 
 	// ========= Start the app =========

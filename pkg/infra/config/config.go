@@ -11,6 +11,15 @@ import (
 	"github.com/spf13/viper"
 )
 
+func NewInternalEnvConfig(
+	cfg *viper.Viper,
+) *internal.EnvConfig {
+	c := internal.EnvConfig{
+		IsDevMode: cfg.GetBool("EnvConfig.IsDevMode"),
+	}
+	return &c
+}
+
 func NewSnowflakeConfig(
 	cfg *viper.Viper,
 ) *snowflake.SnowflakeConfig {
