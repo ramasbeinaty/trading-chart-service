@@ -11,9 +11,9 @@
 ## Start Here
 
 ### 1. Run the App
-To run the app using the command (assuming a transition to Docker is planned):
+To run the app, use the command:
 ```bash
-go run .
+docker-compose up
 ```
 
 ### 2. Use grpcurl to Query the gRPC Server
