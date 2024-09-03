@@ -1,9 +1,9 @@
 package config
 
 import (
-	"log"
-	"strings"
+	"fmt"
 
+	"github.com/joho/godotenv"
 	"github.com/ramasbeinaty/trading-chart-service/internal"
 	"github.com/ramasbeinaty/trading-chart-service/pkg/infra/clients/binance"
 	"github.com/ramasbeinaty/trading-chart-service/pkg/infra/clients/snowflake"
@@ -15,7 +15,7 @@ func NewInternalEnvConfig(
 	cfg *viper.Viper,
 ) *internal.EnvConfig {
 	c := internal.EnvConfig{
-		IsDevMode: cfg.GetBool("EnvConfig.IsDevMode"),
+		IsDevMode: cfg.GetBool("ENV_ISDEVMODE"),
 	}
 	return &c
 }
@@ -24,7 +24,7 @@ func NewSnowflakeConfig(
 	cfg *viper.Viper,
 ) *snowflake.SnowflakeConfig {
 	c := snowflake.SnowflakeConfig{
-		NodeNumber: cfg.GetInt64("SnowflakeConfig.NodeNumber"),
+		NodeNumber: cfg.GetInt64("SNOWFLAKE_NODENUMBER"),
 	}
 	return &c
 }
@@ -33,7 +33,7 @@ func NewBinanceConfig(
 	cfg *viper.Viper,
 ) *binance.BinanceConfig {
 	c := &binance.BinanceConfig{
-		BaseEndpoint: cfg.GetString("BinanceConfig.BaseEndpoint"),
+		BaseEndpoint: cfg.GetString("BINANCE_BASEENDPOINT"),
 	}
 	if c.BaseEndpoint == "" {
 		panic("binance base endpoint not provided")
@@ -45,11 +45,11 @@ func NewDBConfig(
 	cfg *viper.Viper,
 ) *db.DBConfigs {
 	c := &db.DBConfigs{
-		Host:     cfg.GetString("DBConfig.Host"),
-		Port:     cfg.GetString("DBConfig.Port"),
-		User:     cfg.GetString("DBConfig.User"),
-		Password: cfg.GetString("DBConfig.Password"),
-		DBName:   cfg.GetString("DBConfig.DBName"),
+		Host:     cfg.GetString("DB_HOST"),
+		Port:     cfg.GetString("DB_PORT"),
+		User:     cfg.GetString("DB_USER"),
+		Password: cfg.GetString("DB_PASSWORD"),
+		DBName:   cfg.GetString("DB_DBNAME"),
 	}
 	if c.Host == "" {
 		panic("db host not provided")
@@ -69,36 +69,17 @@ func NewDBConfig(
 	return c
 }
 
-func InitializeConfig(
-	envName string,
-	envPath string,
-	envPrefix string,
-) error {
-	viper.SetConfigName(envName)
-	viper.KeyDelimiter("__")
-	viper.AddConfigPath(envPath)
-	viper.SetEnvPrefix(envPrefix)
-	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "__"))
-	viper.AutomaticEnv()
-	viper.BindEnv("PORT", "PORT")
-
-	if err := viper.ReadInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			log.Print("No config file found")
-		} else {
-			log.Print("Error: Failed loading config")
-			return err
-		}
+func InitializeConfig() error {
+	if err := godotenv.Load(); err != nil {
+		return fmt.Errorf("Error loading .env file - %w", err)
 	}
+
+	viper.AutomaticEnv()
 	return nil
 }
 
 func NewConfig() *viper.Viper {
-	if err := InitializeConfig(
-		"env",
-		"./env",
-		internal.SERVICE_NAME,
-	); err != nil {
+	if err := InitializeConfig(); err != nil {
 		panic(err)
 	}
 

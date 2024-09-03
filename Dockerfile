@@ -12,7 +12,6 @@ COPY . .
 # Build the binary
 RUN CGO_ENABLED=0 GOOS=linux go build -o app ./main.go
 
-
 FROM alpine:latest
 RUN apk --no-cache add ca-certificates
 
