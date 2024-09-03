@@ -32,7 +32,7 @@ grpcurl -plaintext localhost:50051 describe candlestick.CandlestickService.Unsub
 ```
 
 ### 3. Start Testing gRPC Server
-**For testing**, set `DEV_MODE=TRUE` in `docker-compose.yml`. The `subscriber_id` would then be set using a counter, meaning the first subscriber will have the ID 1, the second subscriber will have the id 2, etc.
+**For testing**, set `ENV_ISDEVMODE=true` in `docker-compose.yaml`. The `subscriber_id` would then be set using a counter, meaning the first subscriber will have the ID 1, the second subscriber will have the id 2, etc.
 
 #### SubscribeToCandlesticks
 To subscribe to a single or multiple symbols
